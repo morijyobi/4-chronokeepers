@@ -1,8 +1,9 @@
 import tkinter as tk
 
-class Application(tk.Frame):
-    def __init__(self, master):
+class ListView(tk.Frame):
+    def __init__(self, master, switch_frame_callback):
         super().__init__(master)
+        self.switch_frame_callback = switch_frame_callback
         self.pack()
         
         master.geometry('400x400')
@@ -13,10 +14,3 @@ class Application(tk.Frame):
         
     def create_widgets(self):
         pass
-        
-        
-        
-if __name__ == '__main__':
-    root = tk.Tk()
-    app = Application(master=root)
-    app.mainloop()

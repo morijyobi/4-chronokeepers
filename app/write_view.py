@@ -5,9 +5,9 @@ from google.generativeai import configure, GenerativeModel
 import os
 
 class DiaryApp(tk.Frame):
-    def __init__(self, master):
+    def __init__(self, master, dates, switch_frame_callback):
         super().__init__(master)
-        
+        self.switch_frame_callback = switch_frame_callback
         # ウィンドウの設定
         master.geometry('400x400')
         master.title('日記アプリ')
@@ -64,8 +64,8 @@ class DiaryApp(tk.Frame):
         
         menubar.add_cascade(label='日記メニュー', menu=diary_menu)
         
-        diary_menu.add_command(label='日記作成', command=self.diary_write)
-        diary_menu.add_command(label='日記一覧', command=self.diary_list)
+        diary_menu.add_command(label='日記作成', command=lambda: self.switch_frame_callback("calendar"))
+        diary_menu.add_command(label='日記一覧', command=lambda: self.switch_frame_callback("list"))
         
         # メインコンテンツフレーム
         content_frame = ttk.Frame(self.scrollable_frame, padding=20)
