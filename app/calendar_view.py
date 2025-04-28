@@ -1,12 +1,11 @@
 import tkinter as tk
 from PIL import Image, ImageTk
 from tkcalendar import Calendar
-from write_view import DiaryApp
-from list_view import Application
 
-class Application(tk.Frame):
-    def __init__(self, master):
+class CalendarView(tk.Frame):
+    def __init__(self, master, switch_frame_callback):
         super().__init__(master)
+        self.switch_frame_callback = switch_frame_callback
         self.pack(fill='both', expand=True)
         
         master.geometry('400x400')
@@ -19,10 +18,10 @@ class Application(tk.Frame):
         self.master.configure(menu=menubar)
         diary_menu = tk.Menu(menubar,tearoff=0)
         menubar.add_cascade(label='日記メニュー',menu=diary_menu)
-        diary_menu.add_command(label='日記作成',command=self.diary_write)
-        diary_menu.add_command(label='日記一覧',command=self.diary_list)
+        diary_menu.add_command(label='日記作成',command=lambda: self.switch_frame_callback("calendar"))
+        diary_menu.add_command(label='日記一覧',command=lambda: self.switch_frame_callback("list"))
         
-        penimg = Image.open("img\鉛筆の無料アイコン7 .png") # リサイズしたいアイコンのファイル名
+        penimg = Image.open("img/pen.png") # リサイズしたいアイコンのファイル名
         pen_width = 50  # 希望の幅 (ピクセル)
         pen_height = 50 # 希望の高さ (ピクセル)
         resized_pen = penimg.resize((pen_width, pen_height))
@@ -37,19 +36,4 @@ class Application(tk.Frame):
 
     def show_selected_date(self):
         selected_date = self.cal.get_date()
-        print(f'選択された日付: {selected_date}')
-        self.destroy()
-        DiaryApp(self.master)
-        
-    def diary_write(self):
-        self.destroy()
-        DiaryApp(self.master)
-
-    def diary_list(self):
-        self.destroy()
-        Application(self.master)
-
-if __name__ == '__main__':
-    root = tk.Tk()
-    app = Application(master=root)
-    app.mainloop()
+        self.switch_frame_callback("write", selected_date)
