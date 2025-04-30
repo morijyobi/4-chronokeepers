@@ -5,9 +5,9 @@ from google.generativeai import configure, GenerativeModel
 import os
 
 class DiaryApp(tk.Frame):
-    def __init__(self, master, dates, switch_frame_callback):
+    def __init__(self, master):
         super().__init__(master)
-        self.switch_frame_callback = switch_frame_callback
+        
         # ウィンドウの設定
         master.geometry('400x400')
         master.title('日記アプリ')
@@ -46,7 +46,7 @@ class DiaryApp(tk.Frame):
 
         self.api_key = os.getenv('API_Gemini')
         configure(api_key=self.api_key)
-        self.model = GenerativeModel('gemini-2.0-pro-exp-02-05')
+        self.model = GenerativeModel('models/gemini-2.0-flash')
     
     def resize_canvas(self, event):
         # キャンバスのサイズを親ウィンドウに合わせて調整
@@ -64,8 +64,8 @@ class DiaryApp(tk.Frame):
         
         menubar.add_cascade(label='日記メニュー', menu=diary_menu)
         
-        diary_menu.add_command(label='日記作成', command=lambda: self.switch_frame_callback("calendar"))
-        diary_menu.add_command(label='日記一覧', command=lambda: self.switch_frame_callback("list"))
+        diary_menu.add_command(label='日記作成', command=self.diary_write)
+        diary_menu.add_command(label='日記一覧', command=self.diary_list)
         
         # メインコンテンツフレーム
         content_frame = ttk.Frame(self.scrollable_frame, padding=20)
