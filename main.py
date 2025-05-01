@@ -13,6 +13,7 @@ class Main(tk.Tk):
 
     def switch_frame(self, name, date=None):
         if self.current_frame:
+            self.current_frame.pack_forget()
             self.current_frame.destroy()
 
         if name == "calendar":
