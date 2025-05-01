@@ -114,8 +114,19 @@ class DiaryApp(tk.Frame):
         # 保存ボタン
         footer_frame = ttk.Frame(self.scrollable_frame)
         footer_frame.pack(fill=tk.X)
-        self.save_button = ttk.Button(footer_frame, text="保存", width=10, command=self.save_diary)
-        self.save_button.pack(side=tk.RIGHT, padx=40, pady=(0, 20))
+
+        
+
+
+        self.save_button = ttk.Button(footer_frame, text="保存", width=10, 
+                                     command=self.save_diary)
+        self.save_button.pack(side=tk.RIGHT, padx=(0,40),pady=(0, 20))
+        
+        self.save_button = ttk.Button(footer_frame, text="添削", width=10, 
+                                     command=self.teach_diary)
+        self.save_button.pack(side=tk.RIGHT, padx=0,pady=(0, 20))
+        
+        # マウスホイールでスクロールを可能にする
 
         self.scrollable_frame.bind_all("<MouseWheel>", self._on_mousewheel)
 
@@ -130,15 +141,36 @@ class DiaryApp(tk.Frame):
         messagebox.showinfo("新規作成", "新しい日記を作成します")
 
     def save_diary(self):
-        fulfillment = self.slider.get()
+        fulfillment = int(self.slider.get())
         weather = self.weather_combo.get()
         action = self.action_combo.get()
         content = self.text.get(1.0, tk.END)
-        prompt = f"今日の充実度は{fulfillment}、天気は{weather}、主な行動は{action}です。内容は以下の通りです。\n\n{content}"
+
+
+        prompt = f""" 
+        今日の充実度は{fulfillment}、天気は{weather}、主な行動は{action}です。内容は以下の通りです。\n\n{content}"""
+
         response = self.model.generate_content(prompt)
         response_text = response.text.strip()
         messagebox.showinfo("保存完了", f"日記が保存されました。\n\nジェミニ先生からのコメント\n\n{response_text}")
-    def destroy(self):
-        # バインドを解除
-        self.scrollable_frame.unbind_all("<MouseWheel>")
-        super().destroy()
+
+    def teach_diary(self):
+        fulfillment = int(self.slider.get())
+        weather = self.weather_combo.get()
+        action = self.action_combo.get()
+        content = self.text.get(1.0, tk.END)
+
+        prompt = f"""※これは日記です。内容について改善点を教えていただけますか。なお会話は続けるプログラムは組まれていません。
+        今日の充実度は{fulfillment}、天気は{weather}、主な行動は{action}です。内容は以下の通りです。\n\n{content}"""
+
+
+        response = self.model.generate_content(prompt)
+        response_text = response.text.strip()
+    
+        messagebox.showinfo("添削", f"添削されました。\n\nジェミニ先生からのアドバイス\n\n{response_text}")
+
+
+if __name__ == '__main__':
+    root = tk.Tk()
+    app = DiaryApp(root)
+    root.mainloop()
