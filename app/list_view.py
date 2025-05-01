@@ -111,7 +111,10 @@ class DiaryListApp(tk.Frame):
         
         # テキスト（日付、本文）ラベル
         text_label = ttk.Label(self.scrollable_frame, text="テキスト(日付、本文)", font=('Helvetica', 10, 'bold'))
-        text_label.pack(pady=(10, 5))  # 上部に10px、下部に5pxの余白
+        text_label.pack(padx=(0,33), pady=(10, 5))  # 上部に10px、下部に5pxの余白   # 右に33pxの余白を追加
+        
+        explanation_label = tk.Label(self.scrollable_frame, text="※ダブルクリックで詳細表示",font=('HGPｺﾞｼｯｸM', 8))
+        explanation_label.place(x=247, y=165) # 説明文を追加
         
         # テキスト表示用のTreeviewフレーム（スクロールバー付き）
         text_frame = ttk.Frame(self.scrollable_frame)
