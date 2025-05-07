@@ -3,6 +3,7 @@ from tkinter import ttk, messagebox
 from tkinter.font import Font
 from google.generativeai import configure, GenerativeModel
 import os
+import threading # スレッド処理のために追加
 
 class DiaryApp(tk.Frame):
     def __init__(self, master, dates, switch_frame_callback):
@@ -15,7 +16,7 @@ class DiaryApp(tk.Frame):
         # ウィンドウの設定
         master.geometry('400x400')
         master.title('日記アプリ')
-        master.geometry('400x400')
+        # master.geometry('400x400') # 重複しているので一方をコメントアウトまたは削除
 
         # 自分自身を配置
         self.pack(fill='both', expand=True)
@@ -43,9 +44,13 @@ class DiaryApp(tk.Frame):
         self.create_widgets()
 
         self.api_key = os.getenv('API_Gemini')
+        if not self.api_key:
+            messagebox.showerror("エラー", "APIキーが設定されていません。\n環境変数 'API_Gemini' を設定してください。")
+            self.master.destroy() # APIキーがない場合はアプリケーションを終了
+            return
         configure(api_key=self.api_key)
 
-        self.model = GenerativeModel('models/gemini-2.0-flash')
+        self.model = GenerativeModel('gemini-1.5-flash') # モデル名を修正 (例: gemini-1.0-pro や gemini-1.5-flash など)
     
     def resize_canvas(self, event):
         self.canvas.itemconfig(self.canvas_frame, width=event.width)
@@ -109,31 +114,40 @@ class DiaryApp(tk.Frame):
         self.text = tk.Text(text_frame, width=50, height=12, font=text_font,
                             borderwidth=1, relief="solid", padx=8, pady=8)
         self.text.pack(fill=tk.BOTH, expand=True, side=tk.LEFT)
-        scrollbar = ttk.Scrollbar(text_frame, orient="vertical", command=self.text.yview)
-        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
-        self.text.configure(yscrollcommand=scrollbar.set)
+        scrollbar_text = ttk.Scrollbar(text_frame, orient="vertical", command=self.text.yview) # 変数名を変更
+        scrollbar_text.pack(side=tk.RIGHT, fill=tk.Y)
+        self.text.configure(yscrollcommand=scrollbar_text.set)
 
-        # 保存ボタン
+        # ボタンフレーム
         footer_frame = ttk.Frame(self.scrollable_frame)
-        footer_frame.pack(fill=tk.X)
+        footer_frame.pack(fill=tk.X, pady=(10,0)) # 上に少しマージンを追加
 
-        
+        # フッター内のボタン用内部フレーム (右寄せのため)
+        buttons_inner_frame = ttk.Frame(footer_frame)
+        buttons_inner_frame.pack(side=tk.RIGHT, padx=(0,15),pady=(0, 20))
 
 
-        self.save_button = ttk.Button(footer_frame, text="保存", width=10, 
-                                     command=self.save_diary)
-        self.save_button.pack(side=tk.RIGHT, padx=(0,40),pady=(0, 20))
-        
-        self.save_button = ttk.Button(footer_frame, text="添削", width=10, 
+        self.teach_button = ttk.Button(buttons_inner_frame, text="添削", width=10, # 変数名を変更
                                      command=self.teach_diary)
-        self.save_button.pack(side=tk.RIGHT, padx=0,pady=(0, 20))
+        self.teach_button.pack(side=tk.LEFT, padx=(0,5)) # 左から配置、右にマージン
+        
+        self.save_button = ttk.Button(buttons_inner_frame, text="保存", width=10, 
+                                     command=self.save_diary)
+        self.save_button.pack(side=tk.LEFT) # 左から配置
         
         # マウスホイールでスクロールを可能にする
-
-        self.scrollable_frame.bind_all("<MouseWheel>", self._on_mousewheel)
+        self.scrollable_frame.bind_all("<MouseWheel>", self._on_mousewheel, add="+") # add="+" を追加
 
     def _on_mousewheel(self, event):
-        self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+        # Linuxの場合、event.deltaの値が異なることがあるため調整
+        if os.name == 'posix': # Linuxの場合
+            if event.num == 4: # 上スクロール
+                self.canvas.yview_scroll(-1, "units")
+            elif event.num == 5: # 下スクロール
+                self.canvas.yview_scroll(1, "units")
+        else: # WindowsやMacの場合
+            self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+
 
     def diary_write(self):
         self.slider.set(50)
@@ -142,35 +156,134 @@ class DiaryApp(tk.Frame):
         self.text.delete(1.0, tk.END)
         messagebox.showinfo("新規作成", "新しい日記を作成します")
 
+    def _show_loading_screen(self):
+        """ロード中画面を表示する"""
+        self.loading_window = tk.Toplevel(self.master)
+        self.loading_window.title("処理中")
+        self.loading_window.geometry("200x100")
+        # 親ウィンドウの中央に表示
+        x = self.master.winfo_x() + (self.master.winfo_width() // 2) - (200 // 2)
+        y = self.master.winfo_y() + (self.master.winfo_height() // 2) - (100 // 2)
+        self.loading_window.geometry(f"+{x}+{y}")
+
+        self.loading_window.transient(self.master) # 親ウィンドウの上に表示
+        self.loading_window.grab_set() # モーダルにする
+        loading_label = ttk.Label(self.loading_window, text="ロード中...", font=('Helvetica', 12))
+        loading_label.pack(expand=True)
+        self.loading_window.resizable(False, False) # サイズ変更不可
+        self.master.update_idletasks() # UIの更新を強制
+
+    def _hide_loading_screen(self):
+        """ロード中画面を非表示にする"""
+        if hasattr(self, 'loading_window') and self.loading_window.winfo_exists():
+            self.loading_window.destroy()
+            del self.loading_window # 属性を削除
+
+    def _perform_save(self, fulfillment, weather, action, content):
+        """実際の保存処理とAI呼び出し"""
+        try:
+            prompt = f""" 
+            今日の充実度は{fulfillment}、天気は{weather}、主な行動は{action}です。内容は以下の通りです。\n\n{content}"""
+
+            response = self.model.generate_content(prompt)
+            response_text = response.text.strip()
+            # メインスレッドでUI更新をスケジュール
+            self.master.after(0, self._show_save_result, response_text)
+        except Exception as e:
+            # メインスレッドでエラー表示をスケジュール
+            self.master.after(0, self._show_error, f"保存処理中にエラーが発生しました:\n{e}")
+        finally:
+            # メインスレッドでロード画面非表示をスケジュール
+            self.master.after(0, self._hide_loading_screen)
+
+    def _show_save_result(self, response_text):
+        """保存結果をメッセージボックスで表示"""
+        messagebox.showinfo("保存完了", f"日記が保存されました。\n\nジェミニ先生からのコメント\n\n{response_text}")
+
     def save_diary(self):
         fulfillment = int(self.slider.get())
         weather = self.weather_combo.get()
         action = self.action_combo.get()
-        content = self.text.get(1.0, tk.END)
+        content = self.text.get(1.0, tk.END).strip() # 末尾の改行を削除
 
+        if not content:
+            messagebox.showwarning("入力エラー", "日記の内容を入力してください。")
+            return
+        if weather == "天気":
+            messagebox.showwarning("入力エラー", "天気を選択してください。")
+            return
+        if action == "主な行動":
+            messagebox.showwarning("入力エラー", "主な行動を選択してください。")
+            return
 
-        prompt = f""" 
-        今日の充実度は{fulfillment}、天気は{weather}、主な行動は{action}です。内容は以下の通りです。\n\n{content}"""
+        self._show_loading_screen()
+        # 別スレッドで保存処理を実行
+        thread = threading.Thread(target=self._perform_save, args=(fulfillment, weather, action, content))
+        thread.start()
 
-        response = self.model.generate_content(prompt)
-        response_text = response.text.strip()
-        messagebox.showinfo("保存完了", f"日記が保存されました。\n\nジェミニ先生からのコメント\n\n{response_text}")
+    def _perform_teach(self, fulfillment, weather, action, content):
+        """実際の添削処理とAI呼び出し"""
+        try:
+            prompt = f"""※これは日記です。内容について改善点を教えていただけますか。なお会話は続けるプログラムは組まれていません。
+            今日の充実度は{fulfillment}、天気は{weather}、主な行動は{action}です。内容は以下の通りです。\n\n{content}"""
+
+            response = self.model.generate_content(prompt)
+            response_text = response.text.strip()
+            # メインスレッドでUI更新をスケジュール
+            self.master.after(0, self._show_teach_result, response_text)
+        except Exception as e:
+            # メインスレッドでエラー表示をスケジュール
+            self.master.after(0, self._show_error, f"添削処理中にエラーが発生しました:\n{e}")
+        finally:
+            # メインスレッドでロード画面非表示をスケジュール
+            self.master.after(0, self._hide_loading_screen)
+
+    def _show_teach_result(self, response_text):
+        """添削結果をメッセージボックスで表示"""
+        messagebox.showinfo("添削完了", f"添削されました。\n\nジェミニ先生からのアドバイス\n\n{response_text}")
+    
+    def _show_error(self, error_message):
+        """エラーメッセージを表示"""
+        messagebox.showerror("エラー", error_message)
+
 
     def teach_diary(self):
         fulfillment = int(self.slider.get())
         weather = self.weather_combo.get()
         action = self.action_combo.get()
-        content = self.text.get(1.0, tk.END)
+        content = self.text.get(1.0, tk.END).strip() # 末尾の改行を削除
 
-        prompt = f"""※これは日記です。内容について改善点を教えていただけますか。なお会話は続けるプログラムは組まれていません。
-        今日の充実度は{fulfillment}、天気は{weather}、主な行動は{action}です。内容は以下の通りです。\n\n{content}"""
+        if not content:
+            messagebox.showwarning("入力エラー", "日記の内容を入力してください。")
+            return
+        if weather == "天気":
+            messagebox.showwarning("入力エラー", "天気を選択してください。")
+            return
+        if action == "主な行動":
+            messagebox.showwarning("入力エラー", "主な行動を選択してください。")
+            return
 
-
-        response = self.model.generate_content(prompt)
-        response_text = response.text.strip()
-    
-        messagebox.showinfo("添削", f"添削されました。\n\nジェミニ先生からのアドバイス\n\n{response_text}")
+        self._show_loading_screen()
+        # 別スレッドで添削処理を実行
+        thread = threading.Thread(target=self._perform_teach, args=(fulfillment, weather, action, content))
+        thread.start()
+        
     def destroy(self):
         # バインドを解除
-        self.scrollable_frame.unbind_all("<MouseWheel>")
+        self.scrollable_frame.unbind_all("<MouseWheel>") # ここで解除
         super().destroy()
+
+# --- アプリケーション実行のためのサンプルコード (通常は別ファイル) ---
+if __name__ == '__main__':
+    # 環境変数 API_Gemini にご自身のAPIキーを設定してください
+    # 例: os.environ['API_Gemini'] = "YOUR_API_KEY"
+    
+    # ダミーのコールバック関数とdates
+    def switch_frame(frame_name):
+        print(f"Switching to {frame_name}")
+
+    dummy_dates = {"2024-01-01": "元旦の日記"}
+
+    root = tk.Tk()
+    app = DiaryApp(root, dummy_dates, switch_frame)
+    root.mainloop()
