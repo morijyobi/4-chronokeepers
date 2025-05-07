@@ -5,8 +5,10 @@ from google.generativeai import configure, GenerativeModel
 import os
 
 class DiaryApp(tk.Frame):
-    def __init__(self, master):
+    def __init__(self, master, dates, switch_frame_callback):
         super().__init__(master)
+        self.master = master
+        self.dates = dates
         self.switch_frame_callback = switch_frame_callback
 
         
@@ -168,9 +170,7 @@ class DiaryApp(tk.Frame):
         response_text = response.text.strip()
     
         messagebox.showinfo("添削", f"添削されました。\n\nジェミニ先生からのアドバイス\n\n{response_text}")
-
-
-if __name__ == '__main__':
-    root = tk.Tk()
-    app = DiaryApp(root)
-    root.mainloop()
+    def destroy(self):
+        # バインドを解除
+        self.scrollable_frame.unbind_all("<MouseWheel>")
+        super().destroy()

@@ -5,15 +5,15 @@ import os
 from datetime import datetime
 
 class DiaryListApp(tk.Frame):
-    def __init__(self, master):
+    def __init__(self, master, switch_frame_callback):
         super().__init__(master)
-        
+        self.switch_frame_callback = switch_frame_callback
         # ウィンドウの設定
         master.geometry('400x400')
         master.title('日記一覧')
         
         # スクロール可能なキャンバスを作成
-        self.canvas = tk.Canvas(master)
+        self.canvas = tk.Canvas(self)
         self.scrollbar = ttk.Scrollbar(master, orient="vertical", command=self.canvas.yview)
         self.scrollable_frame = tk.Frame(self.canvas)
         
@@ -68,8 +68,8 @@ class DiaryListApp(tk.Frame):
         
         menubar.add_cascade(label='日記メニュー', menu=diary_menu)
         
-        diary_menu.add_command(label='日記作成', command=self.diary_write)
-        diary_menu.add_command(label='日記一覧', command=self.diary_list)
+        diary_menu.add_command(label='日記作成', command=lambda: self.switch_frame_callback("calendar"))
+        diary_menu.add_command(label='日記一覧', command=lambda: self.switch_frame_callback("list"))
         
         # CSVヘッダー情報
         csv_info_label = ttk.Label(self.scrollable_frame, text="CSV日付、天気、充実度、行動", font=('Helvetica', 10, 'bold'))
@@ -215,8 +215,7 @@ class DiaryListApp(tk.Frame):
         for item in self.text_tree.get_children():
             self.text_tree.delete(item)
         self.load_diary_data()
-
-if __name__ == '__main__':
-    root = tk.Tk()
-    app = DiaryListApp(root)
-    root.mainloop()
+    def destroy(self):
+        # バインドを解除
+        self.scrollable_frame.unbind_all("<MouseWheel>")
+        super().destroy()
