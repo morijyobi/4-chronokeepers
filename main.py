@@ -1,7 +1,7 @@
 import tkinter as tk
 from app.calendar_view import CalendarView
 from app.write_view import DiaryApp
-from app.list_view import ListView
+from app.list_view import DiaryListApp
 
 class Main(tk.Tk):
     def __init__(self):
@@ -21,7 +21,7 @@ class Main(tk.Tk):
         elif name == "write":
             self.current_frame = DiaryApp(self, date, self.switch_frame)
         elif name == "list":
-            self.current_frame = ListView(self, self.switch_frame)
+            self.current_frame = DiaryListApp(self, self.switch_frame)
 
         self.current_frame.pack()
 
