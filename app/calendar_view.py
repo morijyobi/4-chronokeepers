@@ -9,7 +9,7 @@ class CalendarView(tk.Frame):
         self.test_mode = test_mode
         self.pack(fill='both', expand=True)
 
-        master.geometry('400x400')
+        master.geometry('600x500')
         master.title('メイン画面')
 
         self.create_widgets()
