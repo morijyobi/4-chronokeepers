@@ -37,34 +37,34 @@ class DiaryApp(tk.Frame):
         master.title('日記アプリ')
         
         # スクロール可能なキャンバスを作成
-        self.canvas = tk.Canvas(self)
-        self.scrollbar = ttk.Scrollbar(master, orient="vertical", command=self.canvas.yview)
-        self.scrollable_frame = tk.Frame(self.canvas)
+        # self.canvas = tk.Canvas(self)
+        # self.scrollbar = ttk.Scrollbar(master, orient="vertical", command=self.canvas.yview)
+        # self.scrollable_frame = tk.Frame(self.canvas)
         
         # スクロール可能なフレームを設定
-        self.scrollable_frame.bind(
-            "<Configure>",
-            lambda e: self.canvas.configure(
-                scrollregion=self.canvas.bbox("all")
-            )
-        )
+        # self.scrollable_frame.bind(
+        #     "<Configure>",
+        #     lambda e: self.canvas.configure(
+        #         scrollregion=self.canvas.bbox("all")
+        # #     )
+        # # )
         
-        # キャンバスにフレームを追加
-        self.canvas_frame = self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+        # # キャンバスにフレームを追加
+        # self.canvas_frame = self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
         
-        # キャンバスのサイズを親ウィンドウに合わせて調整
-        self.canvas.bind("<Configure>", self.resize_canvas)
+        # # キャンバスのサイズを親ウィンドウに合わせて調整
+        # self.canvas.bind("<Configure>", self.resize_canvas)
         
-        # キャンバスとスクロールバーを配置
-        self.canvas.pack(side="left", fill="both", expand=True)
-        self.scrollbar.pack(side="right", fill="y")
+        # # キャンバスとスクロールバーを配置
+        # self.canvas.pack(side="left", fill="both", expand=True)
+        # self.scrollbar.pack(side="right", fill="y")
         
-        # キャンバスとスクロールバーを連動
-        self.canvas.configure(yscrollcommand=self.scrollbar.set)
+        # # キャンバスとスクロールバーを連動
+        # self.canvas.configure(yscrollcommand=self.scrollbar.set)
         
-        # このフレームを scrollable_frame に配置
-        self.inner_frame = tk.Frame(self.scrollable_frame)
-        self.inner_frame.pack(fill=tk.BOTH, expand=True)
+        # # このフレームを scrollable_frame に配置
+        # self.inner_frame = tk.Frame(self.scrollable_frame)
+        # self.inner_frame.pack(fill=tk.BOTH, expand=True)
         
         self.create_widgets()
 
@@ -78,7 +78,7 @@ class DiaryApp(tk.Frame):
     
     def create_widgets(self):
         # ヘッダーフレーム（メニューバー）
-        header_frame = ttk.Frame(self.scrollable_frame)
+        header_frame = ttk.Frame(self)
         header_frame.pack(fill=tk.X, pady=(0, 10))
         
         # メニューバー
@@ -92,7 +92,7 @@ class DiaryApp(tk.Frame):
         diary_menu.add_command(label='日記一覧', command=lambda: self.switch_frame_callback("list"))
         
         # メインコンテンツフレーム
-        content_frame = ttk.Frame(self.scrollable_frame, padding=20)
+        content_frame = ttk.Frame(self, padding=20)
         content_frame.pack(fill=tk.BOTH, expand=True, padx=20, pady=10)
         
         # 充実度
@@ -158,7 +158,7 @@ class DiaryApp(tk.Frame):
         self.text.bind("<KeyRelease>", self.limit_text_length)
         
         # フッターフレーム（保存ボタン）
-        footer_frame = ttk.Frame(self.scrollable_frame)
+        footer_frame = ttk.Frame(self)
         footer_frame.pack(fill=tk.X)
 
         self.save_button = ttk.Button(footer_frame, text="保存", width=10, 
@@ -169,9 +169,9 @@ class DiaryApp(tk.Frame):
                                      command=self.teach_diary)
         self.save_button.pack(side=tk.RIGHT, padx=0,pady=(0, 20))
         
-        # マウスホイールでスクロールを可能にする
+        # # マウスホイールでスクロールを可能にする
 
-        self.scrollable_frame.bind_all("<MouseWheel>", self._on_mousewheel)
+        # self.scrollable_frame.bind_all("<MouseWheel>", self._on_mousewheel)
     
     def _on_mousewheel(self, event):
         # Windowsの場合
@@ -240,6 +240,8 @@ class DiaryApp(tk.Frame):
     
         messagebox.showinfo("添削", f"添削されました。\n\nジェミニ先生からのアドバイス\n\n{response_text}")
     def destroy(self):
-        # バインドを解除
-        self.scrollable_frame.unbind_all("<MouseWheel>")
-        super().destroy()
+        # # バインドを解除
+        # self.scrollable_frame.unbind_all("<MouseWheel>")
+        # super().destroy()
+        pass
+
