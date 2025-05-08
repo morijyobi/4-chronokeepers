@@ -37,7 +37,7 @@ class DiaryApp(tk.Frame):
         master.title('日記アプリ')
         
         # スクロール可能なキャンバスを作成
-        self.canvas = tk.Canvas(master)
+        self.canvas = tk.Canvas(self)
         self.scrollbar = ttk.Scrollbar(master, orient="vertical", command=self.canvas.yview)
         self.scrollable_frame = tk.Frame(self.canvas)
         
@@ -88,8 +88,8 @@ class DiaryApp(tk.Frame):
         
         menubar.add_cascade(label='日記メニュー', menu=diary_menu)
         
-        diary_menu.add_command(label='日記作成', command=self.diary_write)
-        diary_menu.add_command(label='日記一覧', command=self.diary_list)
+        diary_menu.add_command(label='日記作成', command=lambda: self.switch_frame_callback("calendar"))
+        diary_menu.add_command(label='日記一覧', command=lambda: self.switch_frame_callback("list"))
         
         # メインコンテンツフレーム
         content_frame = ttk.Frame(self.scrollable_frame, padding=20)

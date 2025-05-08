@@ -3,7 +3,9 @@ from tkinter import ttk
 import csv
 import os
 from datetime import datetime
-
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CSV_FILE = os.path.join(BASE_DIR, 'data', 'diary_data.csv')
+TEXT_FOLDER = os.path.join(BASE_DIR, 'data', 'texts')
 class DiaryListApp(tk.Frame):
     def __init__(self, master, switch_frame_callback):
         super().__init__(master)
@@ -30,6 +32,7 @@ class DiaryListApp(tk.Frame):
         
         # キャンバスのサイズを親ウィンドウに合わせて調整
         self.canvas.bind("<Configure>", self.resize_canvas)
+        self.canvas.bind("<MouseWheel>", self._on_mousewheel)
         
         # キャンバスとスクロールバーを配置
         self.canvas.pack(side="left", fill="both", expand=True)
@@ -43,7 +46,6 @@ class DiaryListApp(tk.Frame):
         self.inner_frame.pack(fill=tk.BOTH, expand=True)
         
         self.create_widgets()
-        self.load_diary_data()
         
         # マウスホイールでスクロールを可能にする
         # self.scrollable_frame.bind_all("<MouseWheel>", self._on_mousewheel)
@@ -57,6 +59,20 @@ class DiaryListApp(tk.Frame):
         self.canvas.yview_scroll(int(-1*(event.delta/120)), "units")
     
     def create_widgets(self):
+        self.weater_dict = {
+            0: "晴れ",
+            1: "曇り",
+            2: "雨",
+            3: "雪"
+        }
+        self.action_dict = {
+            0: "出社",
+            1: "テレワーク",
+            2: "外回り",
+            3: "出張",
+            4: "休日"
+        }
+
         # ヘッダーフレーム
         header_frame = ttk.Frame(self.scrollable_frame)
         header_frame.pack(fill=tk.X)
@@ -144,78 +160,88 @@ class DiaryListApp(tk.Frame):
         self.text_tree.column('date', width=100)
         self.text_tree.column('content', width=300)  # 少し幅を調整
         self.text_tree.pack(fill=tk.BOTH, expand=True)
+        for entry in self.read_csv_entries():
+            weather = self.weater_dict[int(entry["天気"])]
+            action = self.action_dict[int(entry["行動"])]
+            self.diary_tree.insert("", "end", values=(entry["日付"], weather, entry["充実度"], action))
+        for entry in self.read_txt_entries():
+            if len(entry["本文"]) > 23:
+                short_body = entry["本文"][:23] + "..."
+            else:
+                short_body = entry["本文"]
+            self.text_tree.insert("", "end", values=(entry["日付"], short_body))
+        self.text_tree.bind("<Double-1>", self.on_double_click)                
     
-    def load_diary_data(self):
-        self.load_from_csv()
-    
-    def load_from_csv(self):
-        # CSVファイルのディレクトリ
-        csv_dir = "./data/"
-        
-        # ディレクトリが存在しない場合は作成
-        if not os.path.exists(csv_dir):
-            os.makedirs(csv_dir)
-            print(f"ディレクトリを作成しました: {csv_dir}")
-            # サンプルデータを追加
-            self.diary_tree.insert('', 'end', values=('2025.04.20', '2', '80', '2'))
-            self.text_tree.insert('', 'end', values=('2025.04.20', '今日は晴れて日記を書くのを忘れた。'))
-            return
-        
-        # CSVファイルが見つからない場合はサンプルデータを表示
-        files = [f for f in os.listdir(csv_dir) if f.endswith('.csv')]
-        if not files:
-            print("CSVファイルが見つかりません。サンプルデータを表示します。")
-            self.diary_tree.insert('', 'end', values=('2025.04.20', '2', '80', '2'))
-            self.text_tree.insert('', 'end', values=('2025.04.20', '今日は晴れて日記を書くのを忘れた。'))
-            return
-        
-        # ディレクトリ内のCSVファイルを読み込む
-        for filename in files:
-            file_path = os.path.join(csv_dir, filename)
-            
-            try:
-                with open(file_path, 'r', encoding='utf-8') as csvfile:
-                    reader = csv.reader(csvfile)
-                    # ヘッダー行があれば読み飛ばす
-                    try:
-                        headers = next(reader)
-                    except StopIteration:
-                        print(f"空のCSVファイル: {file_path}")
-                        continue
-                    
-                    for row in reader:
-                        if len(row) >= 4:  # 必要なデータがある場合
-                            date_str = row[0]
-                            weather = row[1]
-                            fulfillment = row[2]
-                            action = row[3]
-                            
-                            # 上部テーブルに追加
-                            self.diary_tree.insert('', 'end', values=(date_str, weather, fulfillment, action))
-                        
-                        if len(row) >= 5:  # 本文がある場合
-                            date_str = row[0]
-                            content = row[4]
-                            
-                            # 下部テーブルに追加
-                            self.text_tree.insert('', 'end', values=(date_str, content))
-            except Exception as e:
-                print(f"ファイル読み込みエラー {file_path}: {e}")
+    def read_csv_entries(self):
+        entries = []
 
-    def diary_write(self):
-        # 新規日記作成画面へ遷移する処理
-        print("日記作成画面へ遷移します")
+        with open(CSV_FILE, newline='', encoding='utf-8') as csvfile:
+            reader = csv.reader(csvfile)
+            for row in reader:
+                entries.append({
+                    "日付": row[0],
+                    "天気": row[1],        # 数値のまま
+                    "充実度": row[2],
+                    "行動": row[3]         # 数値のまま
+                })
+        return entries
+    def read_csv_entries(self):
+        entries = []
+
+        with open(CSV_FILE, newline='', encoding='utf-8') as csvfile:
+            reader = csv.reader(csvfile)
+            for row in reader:
+                entries.append({
+                    "日付": row[0],
+                    "天気": row[1],        # 数値のまま
+                    "充実度": row[2],
+                    "行動": row[3]         # 数値のまま
+                })
+        return entries
+    def read_txt_entries(self):
+        entries = []
+        if not os.path.exists(TEXT_FOLDER):
+            return entries
+
+        for filename in os.listdir(TEXT_FOLDER):
+            if filename.endswith(".txt"):
+                date = filename.replace(".txt", "")
+                with open(os.path.join(TEXT_FOLDER, filename), "r", encoding="utf-8") as f:
+                    body = f.read()
+                entries.append({
+                    "日付": date,
+                    "本文": body
+                })
+        return entries
+    def on_double_click(self, event):
+        selected_item = self.text_tree.selection()
+        if selected_item:
+            item = self.text_tree.item(selected_item)
+        raw_date = str(item['values'][0]).strip()
+        formatted_date = raw_date        
+        filepath = os.path.join(TEXT_FOLDER, f"{formatted_date}.txt")       
+        if os.path.exists(filepath):
+            with open(filepath, "r", encoding="utf-8") as f:
+                full_body = f.read()
+        else:
+            full_body = "本文ファイルが見つかりませんでした。"
+
+        self.show_popup(raw_date, full_body)
+    def show_popup(self, date, body):
+        popup = tk.Toplevel()
+        popup.title(f"{date} の日記全文")
+
+        text = tk.Text(popup, wrap="word", width=60, height=20)
+        text.insert("1.0", body)
+        text.config(state="disabled")
+        text.pack(padx=10, pady=10)
+
     
-    def diary_list(self):
-        # 現在の日記一覧画面を更新
-        print("日記一覧を更新します")
-        # テーブルをクリアして再読み込み
-        for item in self.diary_tree.get_children():
-            self.diary_tree.delete(item)
-        for item in self.text_tree.get_children():
-            self.text_tree.delete(item)
-        self.load_diary_data()
     def destroy(self):
-        # バインドを解除
-        self.scrollable_frame.unbind_all("<MouseWheel>")
-        super().destroy()
+       self.canvas.unbind("<MouseWheel>")
+       self.canvas.unbind("<Configure>")
+       self.scrollable_frame.unbind("<Configure>")
+       self.text_tree.unbind("<Double-1>")
+       self.scrollbar.config(command="")  # コールバック解除
+       self.canvas.configure(yscrollcommand="")  # 同上
+       super().destroy()
