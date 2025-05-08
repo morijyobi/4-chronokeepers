@@ -11,52 +11,53 @@ class DiaryListApp(tk.Frame):
         super().__init__(master)
         self.switch_frame_callback = switch_frame_callback
         # ウィンドウの設定
-        master.geometry('400x400')
+        # self.pack(fill='both', expand=True)
+        master.geometry('600x500')
         master.title('日記一覧')
         
         # スクロール可能なキャンバスを作成
-        self.canvas = tk.Canvas(self)
-        self.scrollbar = ttk.Scrollbar(master, orient="vertical", command=self.canvas.yview)
-        self.scrollable_frame = tk.Frame(self.canvas)
+        # self.canvas = tk.Canvas(self)
+        # self.scrollbar = ttk.Scrollbar(master, orient="vertical", command=self.canvas.yview)
+        # self.scrollable_frame = tk.Frame(self.canvas)
         
         # スクロール可能なフレームを設定
-        self.scrollable_frame.bind(
-            "<Configure>",
-            lambda e: self.canvas.configure(
-                scrollregion=self.canvas.bbox("all")
-            )
-        )
+        # self.scrollable_frame.bind(
+        #     "<Configure>",
+        #     lambda e: self.canvas.configure(
+        #         scrollregion=self.canvas.bbox("all")
+        #     )
+        # )
         
         # キャンバスにフレームを追加
-        self.canvas_frame = self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
+        # self.canvas_frame = self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
         
         # キャンバスのサイズを親ウィンドウに合わせて調整
-        self.canvas.bind("<Configure>", self.resize_canvas)
-        self.canvas.bind("<MouseWheel>", self._on_mousewheel)
+        # self.canvas.bind("<Configure>", self.resize_canvas)
+        # self.canvas.bind("<MouseWheel>", self._on_mousewheel)
         
         # キャンバスとスクロールバーを配置
-        self.canvas.pack(side="left", fill="both", expand=True)
-        self.scrollbar.pack(side="right", fill="y")
+        # self.canvas.pack(side="left", fill="both", expand=True)
+        # self.scrollbar.pack(side="right", fill="y")
         
         # キャンバスとスクロールバーを連動
-        self.canvas.configure(yscrollcommand=self.scrollbar.set)
+        # self.canvas.configure(yscrollcommand=self.scrollbar.set)
         
         # このフレームを scrollable_frame に配置
-        self.inner_frame = tk.Frame(self.scrollable_frame)
-        self.inner_frame.pack(fill=tk.BOTH, expand=True)
+        # self.inner_frame = tk.Frame(self.scrollable_frame)
+        # self.inner_frame.pack(fill=tk.BOTH, expand=True)
         
         self.create_widgets()
         
         # マウスホイールでスクロールを可能にする
         # self.scrollable_frame.bind_all("<MouseWheel>", self._on_mousewheel)
     
-    def resize_canvas(self, event):
+    # def resize_canvas(self, event):
         # キャンバスのサイズを親ウィンドウに合わせて調整
-        self.canvas.itemconfig(self.canvas_frame, width=event.width)
+        # self.canvas.itemconfig(self.canvas_frame, width=event.width)
     
-    def _on_mousewheel(self, event):
+    # def _on_mousewheel(self, event):
         # Windowsの場合
-        self.canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        # self.canvas.yview_scroll(int(-1*(event.delta/120)), "units")
     
     def create_widgets(self):
         self.weater_dict = {
@@ -74,7 +75,7 @@ class DiaryListApp(tk.Frame):
         }
 
         # ヘッダーフレーム
-        header_frame = ttk.Frame(self.scrollable_frame)
+        header_frame = ttk.Frame(self)
         header_frame.pack(fill=tk.X)
         
         # メニューバー
@@ -88,30 +89,28 @@ class DiaryListApp(tk.Frame):
         diary_menu.add_command(label='日記一覧', command=lambda: self.switch_frame_callback("list"))
         
         # CSVヘッダー情報
-        csv_info_label = ttk.Label(self.scrollable_frame, text="CSV日付、天気、充実度、行動", font=('Helvetica', 10, 'bold'))
+        csv_info_label = ttk.Label(self, text="CSV日付、天気、充実度、行動", font=('Helvetica', 10, 'bold'))
         csv_info_label.pack(pady=(10, 5))  # 上部に10px、下部に5pxの余白
         
         # CSV表示用のTreeviewフレーム（スクロールバー付き）
-        diary_frame = ttk.Frame(self.scrollable_frame)
-        diary_frame.pack(fill=tk.X, padx=10, pady=5)
+        # diary_frame = ttk.Frame(self.scrollable_frame)
+        # diary_frame.pack(fill=tk.X, padx=10, pady=5)
         
         # 上部テーブル用の垂直スクロールバー
-        diary_scrolly = ttk.Scrollbar(diary_frame, orient="vertical")
-        diary_scrolly.pack(side=tk.RIGHT, fill=tk.Y)
+        # diary_scrolly = ttk.Scrollbar(diary_frame, orient="vertical")
+        # diary_scrolly.pack(side=tk.RIGHT, fill=tk.Y)
         
         # 上部テーブル用の水平スクロールバー
-        diary_scrollx = ttk.Scrollbar(diary_frame, orient="horizontal")
-        diary_scrollx.pack(side=tk.BOTTOM, fill=tk.X)
+        # diary_scrollx = ttk.Scrollbar(diary_frame, orient="horizontal")
+        # diary_scrollx.pack(side=tk.BOTTOM, fill=tk.X)
         
         # CSV表示用のTreeview（上部テーブル）- スクロールバーと連動
-        self.diary_tree = ttk.Treeview(diary_frame, columns=('date', 'weather', 'fulfillment', 'action'), 
-                                        show='headings', height=3,
-                                        yscrollcommand=diary_scrolly.set,
-                                        xscrollcommand=diary_scrollx.set)
+        self.diary_tree = ttk.Treeview(self, columns=('date', 'weather', 'fulfillment', 'action'), 
+                                        show='headings', height=3) #diary_frame,yscrollcommand=diary_scrolly.set,xscrollcommand=diary_scrollx.set
         
         # スクロールバーとTreeviewを連動
-        diary_scrolly.config(command=self.diary_tree.yview)
-        diary_scrollx.config(command=self.diary_tree.xview)
+        # diary_scrolly.config(command=self.diary_tree.yview)
+        # diary_scrollx.config(command=self.diary_tree.xview)
         
         self.diary_tree.heading('date', text='日付')
         self.diary_tree.heading('weather', text='天気')
@@ -126,33 +125,28 @@ class DiaryListApp(tk.Frame):
         self.diary_tree.pack(fill=tk.BOTH, expand=True)
         
         # テキスト（日付、本文）ラベル
-        text_label = ttk.Label(self.scrollable_frame, text="テキスト(日付、本文)", font=('Helvetica', 10, 'bold'))
+        text_label = ttk.Label(self, text="テキスト(日付、本文)　※ダブルクリックで詳細表示", font=('Helvetica', 10, 'bold'))
         text_label.pack(padx=(0,33), pady=(10, 5))  # 上部に10px、下部に5pxの余白   # 右に33pxの余白を追加
         
-        explanation_label = tk.Label(self.scrollable_frame, text="※ダブルクリックで詳細表示",font=('HGPｺﾞｼｯｸM', 8))
-        explanation_label.place(x=247, y=165) # 説明文を追加
-        
         # テキスト表示用のTreeviewフレーム（スクロールバー付き）
-        text_frame = ttk.Frame(self.scrollable_frame)
-        text_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        # text_frame = ttk.Frame(self.scrollable_frame)
+        # text_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
         
         # 下部テーブル用の垂直スクロールバー
-        text_scrolly = ttk.Scrollbar(text_frame, orient="vertical")
-        text_scrolly.pack(side=tk.RIGHT, fill=tk.Y)
+        # text_scrolly = ttk.Scrollbar(text_frame, orient="vertical")
+        # text_scrolly.pack(side=tk.RIGHT, fill=tk.Y)
         
         # 下部テーブル用の水平スクロールバー
-        text_scrollx = ttk.Scrollbar(text_frame, orient="horizontal")
-        text_scrollx.pack(side=tk.BOTTOM, fill=tk.X)
+        # text_scrollx = ttk.Scrollbar(text_frame, orient="horizontal")
+        # text_scrollx.pack(side=tk.BOTTOM, fill=tk.X)
         
         # テキスト表示用のTreeview（下部テーブル）- スクロールバーと連動
-        self.text_tree = ttk.Treeview(text_frame, columns=('date', 'content'), 
-                                      show='headings', height=10,
-                                      yscrollcommand=text_scrolly.set,
-                                      xscrollcommand=text_scrollx.set)
+        self.text_tree = ttk.Treeview(self, columns=('date', 'content'), 
+                                      show='headings', height=10) #text_frame,yscrollcommand=text_scrolly.set,xscrollcommand=text_scrollx.set
         
         # スクロールバーとTreeviewを連動
-        text_scrolly.config(command=self.text_tree.yview)
-        text_scrollx.config(command=self.text_tree.xview)
+        # text_scrolly.config(command=self.text_tree.yview)
+        # text_scrollx.config(command=self.text_tree.xview)
         
         self.text_tree.heading('date', text='日付')
         self.text_tree.heading('content', text='本文')
@@ -160,6 +154,7 @@ class DiaryListApp(tk.Frame):
         self.text_tree.column('date', width=100)
         self.text_tree.column('content', width=300)  # 少し幅を調整
         self.text_tree.pack(fill=tk.BOTH, expand=True)
+        
         for entry in self.read_csv_entries():
             weather = self.weater_dict[int(entry["天気"])]
             action = self.action_dict[int(entry["行動"])]
@@ -238,10 +233,10 @@ class DiaryListApp(tk.Frame):
 
     
     def destroy(self):
-       self.canvas.unbind("<MouseWheel>")
-       self.canvas.unbind("<Configure>")
-       self.scrollable_frame.unbind("<Configure>")
-       self.text_tree.unbind("<Double-1>")
-       self.scrollbar.config(command="")  # コールバック解除
-       self.canvas.configure(yscrollcommand="")  # 同上
-       super().destroy()
+        super().destroy()
+    #    self.canvas.unbind("<MouseWheel>")
+    #    self.canvas.unbind("<Configure>")
+    #    self.scrollable_frame.unbind("<Configure>")
+    #    self.text_tree.unbind("<Double-1>")
+    #    self.scrollbar.config(command="")  # コールバック解除
+    #    self.canvas.configure(yscrollcommand="")  # 同上
