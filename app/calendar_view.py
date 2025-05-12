@@ -34,12 +34,12 @@ class CalendarView(tk.Frame):
             self.pen_icon_resized = None  # テスト時は画像を使わない
 
         self.label = tk.Label(self, text="日付を選んでボタンを押してください")
-        self.label.place(relx=0.3, y=10)
+        self.label.place(relx=0.5, y=10, anchor='n')
         self.cal = Calendar(self, selectmode='day', date_pattern='yyyy-mm-dd',
                             showweeknumbers=False, firstweekday='monday', font="Arial 13")
-        self.cal.place(x=55, y=50)
+        self.cal.place(relx=0.5, y=50, anchor='n')
         self.pen_button = tk.Button(self, image=self.pen_icon_resized, command=self.show_selected_date)
-        self.pen_button.place(x=170, y=270)
+        self.pen_button.place(relx=0.5, y=270, anchor='n')
 
     def show_selected_date(self):
         selected_date = self.cal.get_date()

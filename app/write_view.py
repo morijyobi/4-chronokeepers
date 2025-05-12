@@ -230,6 +230,7 @@ class DiaryApp(tk.Frame):
     def _show_save_result(self, response_text):
         self._hide_loading_screen() # 結果表示前にロード画面を消す
         messagebox.showinfo("保存完了", f"日記が保存されました。\n\nジェミニ先生からのコメント\n\n{response_text}", parent=self.master)
+        self.switch_frame_callback("calendar")
 
     def save_diary(self):
         fulfillment = int(self.slider.get()) # スライダーの値は数値なのでint()
@@ -253,10 +254,12 @@ class DiaryApp(tk.Frame):
         except KeyError as e:
             messagebox.showerror("内部エラー", f"選択された値の変換に失敗しました: {e}", parent=self.master)
             return
+         
 
         self._show_loading_screen()
         thread = threading.Thread(target=self._perform_save, args=(fulfillment, weat_get, act_get, content, weather_csv_val, action_csv_val))
         thread.start()
+
 
     def _perform_teach(self, fulfillment_val, weather_key, action_key, content_text):
         try:
