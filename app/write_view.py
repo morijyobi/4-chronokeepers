@@ -12,6 +12,16 @@ class DiaryApp(tk.Frame):
         self.master = master
         self.dates = str(dates) # datesが確実に文字列になるようにする
         self.switch_frame_callback = switch_frame_callback
+        self.api_key = None
+        self.model = None
+        self.setup_model()  # 必要なときに設定
+        # --- GUIのセットアップ ---
+        # root = tk.Tk()
+        # root.title("Text Widget Character Limit")
+
+        # text_widget = tk.Text(root, wrap="word", height=10, width=50)
+        # text_widget.pack(padx=10, pady=10)
+        
         
         self.weath = {'晴れ☀':0,'曇り☁':1,'雨☂':2,'雪☃':3}
         self.act = {'出社':0,'テレワーク':1,'外回り':2,'出張':3,'休日':4}
@@ -254,7 +264,12 @@ class DiaryApp(tk.Frame):
             今日の充実度は{fulfillment_val}、天気は{weather_key}、主な行動は{action_key}です。内容は以下の通りです。\n\n{content_text}"""
             response = self.model.generate_content(prompt)
             response_text = response.text.strip()
-            self.master.after(0, self._show_teach_result, response_text)
+
+            # 保存完了メッセージとして表示
+            self.master.after(0, lambda: messagebox.showinfo(
+                "保存完了", f"日記が保存されました。\n\nジェミニ先生からのコメント\n\n{response_text}"
+            ))
+
         except Exception as e:
             self.master.after(0, self._show_error, f"添削処理中にエラーが発生しました:\n{e}")
         finally:
@@ -280,6 +295,13 @@ class DiaryApp(tk.Frame):
             messagebox.showwarning("入力エラー", "日記の内容を入力してください。", parent=self.master)
             return
 
+        messagebox.showinfo("添削", f"添削されました。\n\nジェミニ先生からのアドバイス\n\n{response_text}")
+    def setup_model(self):
+        """ Gemini API の初期化を遅延させるメソッド """
+        self.api_key = os.getenv('API_Gemini')
+        if self.api_key:  # API キーが設定されている場合にのみ初期化
+            configure(api_key=self.api_key)
+            self.model = GenerativeModel('models/gemini-2.0-flash')
         self._show_loading_screen()
         thread = threading.Thread(target=self._perform_teach, args=(fulfillment, weather, action, content))
         thread.start()
