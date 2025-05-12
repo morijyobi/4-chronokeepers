@@ -1,8 +1,9 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk,messagebox
 import csv
 import os
 from datetime import datetime
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CSV_FILE = os.path.join(BASE_DIR, 'data', 'diary_data.csv')
 TEXT_FOLDER = os.path.join(BASE_DIR, 'data', 'texts')
@@ -87,6 +88,7 @@ class DiaryListApp(tk.Frame):
         
         diary_menu.add_command(label='日記作成', command=lambda: self.switch_frame_callback("calendar"))
         diary_menu.add_command(label='日記一覧', command=lambda: self.switch_frame_callback("list"))
+        menubar.add_command(label='ヘルプ', command=self.push_help)
         
         # CSVヘッダー情報
         csv_info_label = ttk.Label(self, text="CSV日付、天気、充実度、行動", font=('Helvetica', 10, 'bold'))
@@ -230,7 +232,9 @@ class DiaryListApp(tk.Frame):
         text.insert("1.0", body)
         text.config(state="disabled")
         text.pack(padx=10, pady=10)
-
+        
+    def push_help(self):
+        messagebox.showinfo('ヘルプ','これまでの記録が確認できます\nテキストの本文をダブルクリックすると詳細表示')
     
     def destroy(self):
         super().destroy()

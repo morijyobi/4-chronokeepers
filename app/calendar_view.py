@@ -1,6 +1,7 @@
 import tkinter as tk
 from PIL import Image, ImageTk
 from tkcalendar import Calendar
+from tkinter import messagebox
 
 class CalendarView(tk.Frame):
     def __init__(self, master, switch_frame_callback, test_mode=False):
@@ -21,6 +22,7 @@ class CalendarView(tk.Frame):
         menubar.add_cascade(label='日記メニュー', menu=diary_menu)
         diary_menu.add_command(label='日記作成', command=lambda: self.switch_frame_callback("calendar"))
         diary_menu.add_command(label='日記一覧', command=lambda: self.switch_frame_callback("list"))
+        menubar.add_command(label='ヘルプ', command=self.push_help)
 
         if not self.test_mode:
             penimg = Image.open("img/pen.png")  # 実際の画像読み込み
@@ -42,3 +44,6 @@ class CalendarView(tk.Frame):
     def show_selected_date(self):
         selected_date = self.cal.get_date()
         self.switch_frame_callback("write", selected_date)
+        
+    def push_help(self):
+        messagebox.showinfo('ヘルプ','カレンダーの日付を選択して、カレンダーの下のボタンを押す')

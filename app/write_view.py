@@ -13,7 +13,7 @@ class DiaryApp(tk.Frame):
         self.dates = str(dates) # datesが確実に文字列になるようにする
         self.switch_frame_callback = switch_frame_callback
         
-        self.weath = {'晴れ☀':0,'曇り☁':1,'雨☂':2,'雪':3}
+        self.weath = {'晴れ☀':0,'曇り☁':1,'雨☂':2,'雪☃':3}
         self.act = {'出社':0,'テレワーク':1,'外回り':2,'出張':3,'休日':4}
         # CSV保存用。選択肢に絵文字なしのものをComboboxで使うかは別途検討
         self.weather_select_csv = ['晴れ','曇り','雨','雪']
@@ -71,6 +71,7 @@ class DiaryApp(tk.Frame):
         
         diary_menu.add_command(label='日記作成', command=lambda: self.switch_frame_callback("calendar"))
         diary_menu.add_command(label='日記一覧', command=lambda: self.switch_frame_callback("list"))
+        menubar.add_command(label='ヘルプ', command=self.push_help)
         
         # メインコンテンツフレーム (self に直接配置)
         content_frame = ttk.Frame(self, padding=20)
@@ -103,7 +104,7 @@ class DiaryApp(tk.Frame):
         weather_frame = ttk.Frame(dropdowns_frame)
         weather_frame.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 5))
         
-        weather_list = ['晴れ☀', '曇り☁', '雨☂', '雪'] # 雪を追加
+        weather_list = ['晴れ☀', '雨☂', '曇り☁', '雪☃'] # 雪を追加
         self.weather_combo = ttk.Combobox(weather_frame, values=weather_list, state='readonly')
         self.weather_combo.set("天気")
         self.weather_combo.pack(fill=tk.X)
@@ -282,7 +283,10 @@ class DiaryApp(tk.Frame):
         self._show_loading_screen()
         thread = threading.Thread(target=self._perform_teach, args=(fulfillment, weather, action, content))
         thread.start()
-        
+
+    def push_help(self):
+        messagebox.showinfo('ヘルプ','バーをスライドさせて充実度を決める\n天気と主な行動を選ぶ\n本文を入力')
+      
     def destroy(self):
         # もし`bind_all`などを使用していた場合はここで`unbind_all`する
         # 現在のコードでは特に DiaryApp クラスが直接 bind_all しているものはない
