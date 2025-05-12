@@ -11,7 +11,9 @@ class DiaryApp(tk.Frame):
         self.master = master
         self.dates = dates
         self.switch_frame_callback = switch_frame_callback
-        
+        self.api_key = None
+        self.model = None
+        self.setup_model()  # 必要なときに設定
         # --- GUIのセットアップ ---
         # root = tk.Tk()
         # root.title("Text Widget Character Limit")
@@ -68,9 +70,9 @@ class DiaryApp(tk.Frame):
         
         self.create_widgets()
 
-        self.api_key = os.getenv('API_Gemini')
-        configure(api_key=self.api_key)
-        self.model = GenerativeModel('models/gemini-2.0-flash')
+        # self.api_key = os.getenv('API_Gemini')
+        # configure(api_key=self.api_key)
+        # self.model = GenerativeModel('models/gemini-2.0-flash')
     
     def resize_canvas(self, event):
         # キャンバスのサイズを親ウィンドウに合わせて調整
@@ -212,9 +214,13 @@ class DiaryApp(tk.Frame):
 
         prompt = f"今日の充実度は{fulfillment}、天気は{weat_get}、主な行動は{act_get}です。内容は以下の通りです。\n\n{content}"
 
-        response = self.model.generate_content(prompt)
-        response_text = response.text.strip()
-        
+        # モデルが初期化されていれば生成
+        if self.model:
+            response = self.model.generate_content(prompt)
+            response_text = response.text.strip()
+        else:
+            response_text = "コメントはありません。"
+
         with open(self.filepath, mode='a', newline='', encoding='utf-8') as file:
             writer = csv.writer(file)
             writer.writerow([self.dates, weather, fulfillment, action])
@@ -234,11 +240,20 @@ class DiaryApp(tk.Frame):
         prompt = f"""※これは日記です。内容について改善点を教えていただけますか。なお会話は続けるプログラムは組まれていません。
         今日の充実度は{fulfillment}、天気は{weather}、主な行動は{action}です。内容は以下の通りです。\n\n{content}"""
 
-
-        response = self.model.generate_content(prompt)
-        response_text = response.text.strip()
+        # モデルが初期化されていれば生成
+        if self.model:
+            response = self.model.generate_content(prompt)
+            response_text = response.text.strip()
+        else:
+            response_text = "アドバイスはありません。"
     
         messagebox.showinfo("添削", f"添削されました。\n\nジェミニ先生からのアドバイス\n\n{response_text}")
+    def setup_model(self):
+        """ Gemini API の初期化を遅延させるメソッド """
+        self.api_key = os.getenv('API_Gemini')
+        if self.api_key:  # API キーが設定されている場合にのみ初期化
+            configure(api_key=self.api_key)
+            self.model = GenerativeModel('models/gemini-2.0-flash')
     def destroy(self):
         # バインドを解除
         self.scrollable_frame.unbind_all("<MouseWheel>")
