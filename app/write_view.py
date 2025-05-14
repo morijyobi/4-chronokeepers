@@ -203,7 +203,7 @@ class DiaryApp(tk.Frame):
                 self.master.after(0, self._show_error, "APIモデルが初期化されていません。")
                 return
 
-            prompt = f"今日の充実度は{fulfillment_val}、天気は{weather_key}、主な行動は{action_key}です。内容は以下の通りです。\n\n{content_text}"
+            prompt = f"今日の充実度は{fulfillment_val}、天気は{weather_key}、主な行動は{action_key}です。内容は以下の通りです。なお会話は続けるプログラムは組まれていません。励ましの感想を300文字以内で教えてください。\n\n{content_text}"
             response = self.model.generate_content(prompt)
             response_text = response.text.strip()
             
@@ -263,7 +263,7 @@ class DiaryApp(tk.Frame):
                 return
 
             prompt = f"""※これは日記です。内容について改善点を教えていただけますか。なお会話は続けるプログラムは組まれていません。
-            今日の充実度は{fulfillment_val}、天気は{weather_key}、主な行動は{action_key}です。内容は以下の通りです。\n\n{content_text}"""
+            今日の充実度は{fulfillment_val}、天気は{weather_key}、主な行動は{action_key}です。励ましの感想を300文字以内で教えてください。内容は以下の通りです。\n\n{content_text}"""
             response = self.model.generate_content(prompt)
             response_text = response.text.strip()
 
