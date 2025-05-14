@@ -14,18 +14,11 @@ class DiaryApp(tk.Frame):
         self.switch_frame_callback = switch_frame_callback
         self.api_key = None
         self.model = None
-        self.setup_model()  # 必要なときに設定
-        # --- GUIのセットアップ ---
-        # root = tk.Tk()
-        # root.title("Text Widget Character Limit")
+        # self.setup_model()  # ★★★ この呼び出しを削除 ★★★
 
-        # text_widget = tk.Text(root, wrap="word", height=10, width=50)
-        # text_widget.pack(padx=10, pady=10)
-        
-        
+        # --- GUIのセットアップのための他の属性初期化 ---
         self.weath = {'晴れ☀':0,'曇り☁':1,'雨☂':2,'雪☃':3}
         self.act = {'出社':0,'テレワーク':1,'外回り':2,'出張':3,'休日':4}
-        # CSV保存用。選択肢に絵文字なしのものをComboboxで使うかは別途検討
         self.weather_select_csv = ['晴れ','曇り','雨','雪']
         self.act_select_csv = ['出社','テレワーク','外回り','出張','休日']
         
@@ -33,7 +26,6 @@ class DiaryApp(tk.Frame):
         self.filename = 'diary_data.csv'
         self.textfold = os.path.join(self.folder,'texts') # 'data/texts'
         
-        # textsフォルダが存在しない場合は作成
         if not os.path.exists(self.textfold):
             os.makedirs(self.textfold)
             
@@ -41,31 +33,37 @@ class DiaryApp(tk.Frame):
         self.filepath = os.path.join(self.folder, self.filename) # data/diary_data.csv
         self.txtpath = os.path.join(self.textfold, self.textfile) # data/texts/YYYY-MM-DD.txt
         
-        # ウィンドウの設定
+        # ウィンドウの設定 (API初期化成功後に移動)
+        # master.geometry('600x500')
+        # master.title('日記アプリ')
+        # self.pack(fill='both', expand=True)
+
+        self.create_widgets() # GUIウィジェットを作成
+
+        # ★★★ APIモデルの初期化をここに移動し、setup_modelを呼び出す ★★★
+        if not self.setup_model(): # API初期化を実行
+            # setup_model内でエラー表示とウィンドウ破棄が行われる可能性がある
+            if not (hasattr(self.master, 'winfo_exists') and self.master.winfo_exists()):
+                return # __init__ の処理を中断
+
+        # API初期化が成功した後にウィンドウの最終設定と表示を行う
         master.geometry('600x500')
         master.title('日記アプリ')
         self.pack(fill='both', expand=True) # DiaryAppフレーム自身を配置
 
-        self.create_widgets()
-
-        self.api_key = os.getenv('API_Gemini')
-        if not self.api_key:
-            messagebox.showerror("エラー", "APIキーが設定されていません。\n環境変数 'API_Gemini' を設定してください。")
-            self.master.destroy()
-            return
-        try:
-            configure(api_key=self.api_key)
-            # モデル名をより一般的なものに修正 (例: gemini-1.5-flash)
-            # 'models/gemini-2.0-flash' が正しいモデル名であればそのままにしてください
-            self.model = GenerativeModel('gemini-1.5-flash')
-        except Exception as e:
-            messagebox.showerror("API設定エラー", f"Geminiモデルの初期化に失敗しました: {e}")
-            self.master.destroy()
-            return
-    
-    # resize_canvas は現在スクロール可能なキャンバスがコメントアウトされているため不要
-    # def resize_canvas(self, event):
-    #     self.canvas.itemconfig(self.canvas_frame, width=event.width)
+        # ★★★ 以前ここにあったAPIキー設定とモデル初期化のブロックは setup_model に統合されたため削除 ★★★
+        # self.api_key = os.getenv('API_Gemini')
+        # if not self.api_key:
+        #     messagebox.showerror("エラー", "APIキーが設定されていません。\n環境変数 'API_Gemini' を設定してください。")
+        #     self.master.destroy()
+        #     return
+        # try:
+        #     configure(api_key=self.api_key)
+        #     self.model = GenerativeModel('gemini-1.5-flash')
+        # except Exception as e:
+        #     messagebox.showerror("API設定エラー", f"Geminiモデルの初期化に失敗しました: {e}")
+        #     self.master.destroy()
+        #     return
     
     def create_widgets(self):
         # ヘッダーフレーム（メニューバー用コンテナだが、メニューはmasterに配置）
@@ -157,10 +155,6 @@ class DiaryApp(tk.Frame):
                                      command=self.save_diary)
         self.save_button.pack(side=tk.LEFT)
     
-    # _on_mousewheel はスクロール可能なキャンバスがコメントアウトされているため不要
-    # def _on_mousewheel(self, event):
-    #     self.canvas.yview_scroll(int(-1*(event.delta/120)), "units")
-    
     def diary_write(self):
         self.slider.set(50)
         self.weather_combo.set("天気")
@@ -173,8 +167,6 @@ class DiaryApp(tk.Frame):
         content = widget.get("1.0", "end-1c")
         if len(content) > 200:
             widget.delete("1.0 + 200 chars", "end")
-            # 任意: ユーザーに通知
-            # messagebox.showwarning("文字数制限", "日記は200文字以内で入力してください。", parent=self.master)
 
     def _show_loading_screen(self):
         self.loading_window = tk.Toplevel(self.master)
@@ -197,43 +189,43 @@ class DiaryApp(tk.Frame):
             del self.loading_window
 
     def _show_error(self, error_message):
-        self._hide_loading_screen() # エラー表示前にロード画面を確実に消す
+        self._hide_loading_screen() 
         messagebox.showerror("エラー", error_message, parent=self.master)
 
     def _perform_save(self, fulfillment_val, weather_key, action_key, content_text, weather_val_csv, action_val_csv):
         try:
+            if not self.model:
+                self.master.after(0, self._show_error, "APIモデルが初期化されていません。")
+                return
+
             prompt = f"今日の充実度は{fulfillment_val}、天気は{weather_key}、主な行動は{action_key}です。内容は以下の通りです。\n\n{content_text}"
             response = self.model.generate_content(prompt)
             response_text = response.text.strip()
             
-            # ファイル保存
-            # CSVヘッダーが存在しない場合のみ書き込むロジックを追加
             file_exists = os.path.isfile(self.filepath)
             with open(self.filepath, mode='a', newline='', encoding='utf-8') as file:
                 writer = csv.writer(file)
-                if not file_exists or os.path.getsize(self.filepath) == 0: # ファイルが空の場合もヘッダー書き込み
-                    writer.writerow(['date', 'weather', 'fulfillment', 'action']) # ヘッダー
+                if not file_exists or os.path.getsize(self.filepath) == 0: 
+                    writer.writerow(['date', 'weather', 'fulfillment', 'action']) 
                 writer.writerow([self.dates, weather_val_csv, fulfillment_val, action_val_csv])
                 
-            with open(self.txtpath, mode='w', encoding='utf-8') as file: # 'a' から 'w' に変更 (日付ごとのファイルなので上書きで良い)
+            with open(self.txtpath, mode='w', encoding='utf-8') as file: 
                 file.write(content_text)
     
             self.master.after(0, self._show_save_result, response_text)
         except Exception as e:
             self.master.after(0, self._show_error, f"保存処理中にエラーが発生しました:\n{e}")
         finally:
-            # finallyブロックでもロード画面を消すが、_show_error内でも呼んでいるので重複する可能性あり。
-            # _show_errorで呼ばれるならここでは不要かもしれないが、念のため。
             self.master.after(0, self._hide_loading_screen)
 
 
     def _show_save_result(self, response_text):
-        self._hide_loading_screen() # 結果表示前にロード画面を消す
+        self._hide_loading_screen() 
         messagebox.showinfo("保存完了", f"日記が保存されました。\n\nジェミニ先生からのコメント\n\n{response_text}", parent=self.master)
         self.switch_frame_callback("calendar")
 
     def save_diary(self):
-        fulfillment = int(self.slider.get()) # スライダーの値は数値なのでint()
+        fulfillment = int(self.slider.get()) 
         weat_get = self.weather_combo.get()
         act_get = self.action_combo.get()
         content = self.text.get(1.0, tk.END).strip()
@@ -249,37 +241,37 @@ class DiaryApp(tk.Frame):
             return
         
         try:
-            weather_csv_val = self.weath[weat_get] # CSV保存用の数値
-            action_csv_val = self.act[act_get]   # CSV保存用の数値
+            weather_csv_val = self.weath[weat_get] 
+            action_csv_val = self.act[act_get]   
         except KeyError as e:
             messagebox.showerror("内部エラー", f"選択された値の変換に失敗しました: {e}", parent=self.master)
             return
          
-
         self._show_loading_screen()
         thread = threading.Thread(target=self._perform_save, args=(fulfillment, weat_get, act_get, content, weather_csv_val, action_csv_val))
         thread.start()
 
-
     def _perform_teach(self, fulfillment_val, weather_key, action_key, content_text):
         try:
+            if not self.model:
+                self.master.after(0, self._show_error, "APIモデルが初期化されていません。")
+                return
+
             prompt = f"""※これは日記です。内容について改善点を教えていただけますか。なお会話は続けるプログラムは組まれていません。
             今日の充実度は{fulfillment_val}、天気は{weather_key}、主な行動は{action_key}です。内容は以下の通りです。\n\n{content_text}"""
             response = self.model.generate_content(prompt)
             response_text = response.text.strip()
 
-            # 保存完了メッセージとして表示
             self.master.after(0, lambda: messagebox.showinfo(
-                "保存完了", f"日記が保存されました。\n\nジェミニ先生からのコメント\n\n{response_text}"
+                "添削完了", f"ジェミニ先生からのアドバイス\n\n{response_text}", parent=self.master # タイトルを修正
             ))
-
         except Exception as e:
             self.master.after(0, self._show_error, f"添削処理中にエラーが発生しました:\n{e}")
         finally:
             self.master.after(0, self._hide_loading_screen)
 
-    def _show_teach_result(self, response_text):
-        self._hide_loading_screen() # 結果表示前にロード画面を消す
+    def _show_teach_result(self, response_text): # このメソッドは現在直接呼ばれていないが、念のため残す
+        self._hide_loading_screen()
         messagebox.showinfo("添削完了", f"添削されました。\n\nジェミニ先生からのアドバイス\n\n{response_text}", parent=self.master)
 
     def teach_diary(self):
@@ -298,41 +290,50 @@ class DiaryApp(tk.Frame):
             messagebox.showwarning("入力エラー", "日記の内容を入力してください。", parent=self.master)
             return
 
-        messagebox.showinfo("添削", f"添削されました。\n\nジェミニ先生からのアドバイス\n\n{response_text}")
-    def setup_model(self):
-        """ Gemini API の初期化を遅延させるメソッド """
-        self.api_key = os.getenv('API_Gemini')
-        if self.api_key:  # API キーが設定されている場合にのみ初期化
-            configure(api_key=self.api_key)
-            self.model = GenerativeModel('models/gemini-2.0-flash')
+        # ★★★ 不要な messagebox.showinfo を削除 ★★★
+        # messagebox.showinfo("添削", f"添削されました。\n\nジェミニ先生からのアドバイス\n\n{response_text}")
+        
         self._show_loading_screen()
         thread = threading.Thread(target=self._perform_teach, args=(fulfillment, weather, action, content))
         thread.start()
 
+    # ★★★ setup_model メソッドを修正 ★★★
+    def setup_model(self):
+        """ Gemini API の初期化を行うメソッド """
+        # GUI要素へのアクセスやスレッド開始処理を削除
+        # fulfillment = int(self.slider.get())
+        # weather = self.weather_combo.get()
+        # action = self.action_combo.get()
+        # content = self.text.get(1.0, tk.END).strip()
+        
+        if self.model: # 既に初期化済みであれば何もしない
+            return True
+
+        self.api_key = os.getenv('API_Gemini')
+        if not self.api_key:
+            messagebox.showerror("エラー", "APIキーが設定されていません。\n環境変数 'API_Gemini' を設定してください。", parent=self.master)
+            if hasattr(self.master, 'destroy') and self.master.winfo_exists(): # masterが破棄可能か確認
+                self.master.destroy()
+            return False # APIキーがない場合は失敗
+
+        try:
+            configure(api_key=self.api_key)
+            # モデル名を 'gemini-1.5-flash' に統一 (以前のコードで使われていたため)
+            self.model = GenerativeModel('gemini-1.5-flash') 
+            return True # 初期化成功
+        except Exception as e:
+            messagebox.showerror("API設定エラー", f"Geminiモデルの初期化に失敗しました: {e}", parent=self.master)
+            if hasattr(self.master, 'destroy') and self.master.winfo_exists(): # masterが破棄可能か確認
+                self.master.destroy()
+            return False # 初期化失敗
+
+        # スレッド開始処理を削除
+        # self._show_loading_screen()
+        # thread = threading.Thread(target=self._perform_teach, args=(fulfillment, weather, action, content))
+        # thread.start()
+
     def push_help(self):
-        messagebox.showinfo('ヘルプ','バーをスライドさせて充実度を決める\n天気と主な行動を選ぶ\n本文を入力')
+        messagebox.showinfo('ヘルプ','バーをスライドさせて充実度を決める\n天気と主な行動を選ぶ\n本文を入力', parent=self.master)
       
     def destroy(self):
-        # もし`bind_all`などを使用していた場合はここで`unbind_all`する
-        # 現在のコードでは特に DiaryApp クラスが直接 bind_all しているものはない
-        # (スクロール関連がコメントアウトされているため)
         super().destroy()
-
-# --- アプリケーション実行のためのサンプルコード (通常は別ファイル) ---
-if __name__ == '__main__':
-    # 環境変数 API_Gemini にご自身のAPIキーを設定してください
-    # 例: os.environ['API_Gemini'] = "YOUR_API_KEY"
-    if not os.getenv('API_Gemini'):
-        print("環境変数 'API_Gemini' が設定されていません。ダミーのAPIキーで実行します。")
-        os.environ['API_Gemini'] = "YOUR_API_KEY_HERE" # ダミー
-
-    # ダミーのコールバック関数とdates
-    def switch_frame(frame_name):
-        print(f"Switching to {frame_name}")
-
-    import datetime
-    dummy_date_str = datetime.date.today().strftime("%Y-%m-%d")
-
-    root = tk.Tk()
-    app = DiaryApp(root, dummy_date_str, switch_frame)
-    root.mainloop()
