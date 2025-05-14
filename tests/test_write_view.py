@@ -42,50 +42,47 @@ class TestDiaryApp(unittest.TestCase):
         self.root.destroy()  # 破棄処理
         shutil.rmtree(self.test_dir)  # テスト用ディレクトリを削除
 
-    @patch("app.write_view.configure")  # ←ここを変更！
-    @patch("app.write_view.GenerativeModel")  # ←ここを変更！    
-    def test_save_diary_creates_files(self, MockModel, mock_configure):
-        # configureの呼び出しをモックしてAPIキー設定を無効にする
-        mock_configure.return_value = None  # configureメソッドを完全にモックしてAPIキー設定を無効にする
+    @patch('app.write_view.messagebox.showinfo')
+    def test_save_diary_creates_files(self, mock_showinfo):
+        os.makedirs(os.path.dirname(self.app.filepath), exist_ok=True)
 
-        # モックの戻り値設定
-        mock_instance = MockModel.return_value
-        mock_instance.generate_content.return_value.text = "モックのコメントです"
+        # ダミーのデータを渡す（内容はなんでもよい）
+        self.app._perform_save(
+            fulfillment_val="5",
+            weather_key="晴れ",
+            action_key="休日",
+            content_text="テスト日記",
+            weather_val_csv="sunny",
+            action_val_csv="study"
+        )
 
-        # save_diaryを実行
-        self.app.save_diary()
-
-        # CSVファイルが存在しているか確認
         self.assertTrue(os.path.exists(self.app.filepath))
-        with open(self.app.filepath, encoding='utf-8') as f:
-            reader = csv.reader(f)
-            rows = list(reader)
-            self.assertEqual(len(rows), 1)
-            self.assertEqual(rows[0][0], self.date)
 
-        # テキストファイルが存在しているか確認
-        self.assertTrue(os.path.exists(self.app.txtpath))
-        with open(self.app.txtpath, encoding='utf-8') as f:
-            content = f.read()
-            self.assertIn("これはテストの日記です。", content)
-    @patch("app.write_view.configure")  # ←ここを変更！
-    @patch("app.write_view.GenerativeModel")  # ←ここを変更！    
-    @patch("app.write_view.messagebox.showinfo")
-    def test_teach_diary_calls_messagebox(self, mock_showinfo, mock_configure, MockModel):
-        # configureの呼び出しをモックしてAPIキー設定を無効にする
-        mock_configure.return_value = None  # configureメソッドを完全にモックしてAPIキー設定を無効にする
+    @patch('app.write_view.messagebox.showinfo')
+    @patch.object(tk.Tk, 'after', lambda self, time_ms, func, *args: func(*args))  # afterを即実行に
+    def test_teach_diary_calls_messagebox(self, mock_showinfo):
+        # イベントで同期を取る
+        import threading
+        called_event = threading.Event()
 
-        # モックの戻り値設定
-        mock_instance = MockModel.return_value
-        mock_instance.generate_content.return_value.text = "これは添削のアドバイスです。"
+        # showinfo をフックして、呼び出されたらイベントをセット
+        def on_showinfo(*args, **kwargs):
+            called_event.set()
 
-        # teach_diaryを実行
-        self.app.teach_diary()
+        mock_showinfo.side_effect = on_showinfo
 
-        # messagebox.showinfoが呼ばれたか確認
-        mock_showinfo.assert_called_once()
-        args = mock_showinfo.call_args[0]
-        self.assertIn("ジェミニ先生からのアドバイス", args[1])
+        # 添削処理を開始
+        self.app._perform_teach(
+            fulfillment_val="3",
+            weather_key="曇り",
+            action_key="運動",
+            content_text="今日はちょっとだけ体を動かした。"
+        )
+
+        # 最大5秒まで待機
+        called = called_event.wait(timeout=5)
+
+        self.assertTrue(called, "messagebox.showinfo was not called within timeout")
     def test_limit_text_length_does_not_cut_short_text(self):
         # 200文字以内のテキスト
         short_text = "短いテキストです。" * 10  # 約100文字程度

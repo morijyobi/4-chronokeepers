@@ -34,7 +34,7 @@ class TestMain(unittest.TestCase):
         MockDiaryApp.assert_called_once_with(self.app, "2025-04-29", self.app.switch_frame)
         mock_frame.pack.assert_called_once()
 
-    @patch('main.ListView')
+    @patch('main.DiaryListApp')
     def test_switch_to_list(self, MockListView):
         mock_frame = MagicMock()
         MockListView.return_value = mock_frame
