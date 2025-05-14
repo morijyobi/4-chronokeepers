@@ -337,4 +337,3 @@ class DiaryApp(tk.Frame):
       
     def destroy(self):
         super().destroy()
-
