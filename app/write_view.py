@@ -167,6 +167,11 @@ class DiaryApp(tk.Frame):
         content = widget.get("1.0", "end-1c")
         if len(content) > 200:
             widget.delete("1.0 + 200 chars", "end")
+            self.text.config(bg="lightcoral") # 赤色
+        else:
+            self.text.config(bg="white")
+            # 任意: ユーザーに通知
+            # messagebox.showwarning("文字数制限", "日記は200文字以内で入力してください。", parent=self.master)
 
     def _show_loading_screen(self):
         self.loading_window = tk.Toplevel(self.master)
